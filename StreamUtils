@@ -6,37 +6,43 @@ import java.util.function.BinaryOperator;
 public class StreamUtils {
 
 
-    @SafeVarargs
-    public static final <T> Map<String, Map<String, T>> joinNestedMaps(BinaryOperator<T> combiner,
-                                                                       Map<String, Map<String, T>>... maps) {
+   @SafeVarargs
+    public static final <T> Map<String, T> joinMaps(BinaryOperator<T> combiner, Map<String, T>... maps) {
 
-        Map<String, Map<String, T>> finalMap = new HashMap<>();
+        Map<String, T> finalMap = new HashMap<>();
         if (maps.length > 0) {
             finalMap.putAll(maps[0]);
 
             for (int i = 1; i < maps.length; i++) {
-                Map<String, Map<String, T>> map = maps[i];
-
-                for (Map.Entry<String, Map<String, T>> e : map.entrySet()) {
-                    if (!finalMap.containsKey(e.getKey())) {
-                        finalMap.put(e.getKey(), e.getValue());
+                Map<String, T> map = maps[i];
+                for (Map.Entry<String, T> ee : map.entrySet()) {
+                    T item = finalMap.get(ee.getKey());
+                    T newItem = ee.getValue();
+                    if (item == null) {
+                        finalMap.put(ee.getKey(), newItem);
 
                     } else {
-                        Map<String, T> finalInnerMap = finalMap.get(e.getKey());
-                        for (Map.Entry<String, T> ee : e.getValue().entrySet()) {
-                            T item = finalInnerMap.get(ee.getKey());
-                            T newItem = ee.getValue();
-                            if (item == null) {
-                                finalInnerMap.put(ee.getKey(), newItem);
-
-                            } else {
-                                combiner.apply(item, newItem);
-                            }
-                        }
+                        combiner.apply(item, newItem);
                     }
                 }
             }
         }
         return finalMap;
+    }
+    
+
+    @SafeVarargs
+    public static final <T> Map<String, Map<String, T>> joinNestedMaps(BinaryOperator<T> combiner,
+                                                                        Map<String, Map<String, T>>... maps) {
+       
+        return joinMaps((a, b) -> joinMaps(combiner, a, b), maps);
+    }
+
+
+    @SafeVarargs
+    public static final <T> Map<String, Map<String, Map<String, T>>> joinNested2(BinaryOperator<T> combiner,
+                                                                       Map<String, Map<String, Map<String, T>>>... maps) {
+
+        return joinMaps((a, b) -> joinMaps((aa, bb) -> joinMaps(combiner, aa, bb), a, b), maps);
     }
 }
